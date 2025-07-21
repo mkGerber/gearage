@@ -75,7 +75,7 @@ function App() {
             id: session.user.id,
             email: session.user.email!,
             name: session.user.email?.split("@")[0] || "User",
-            subscription: "free",
+            subscription: "free" as const,
             createdAt: session.user.created_at,
           };
           dispatch(setUser(userData));
