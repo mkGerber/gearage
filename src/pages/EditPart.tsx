@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, Upload, X, Plus } from "lucide-react";
-import { addPart } from "@/store/slices/partsSlice";
+import { updatePart } from "@/store/slices/partsSlice";
 import { RootState } from "@/store";
 import { Part, PartCategory } from "@/types";
 import { supabase, storage } from "@/services/supabase";
@@ -98,11 +98,16 @@ const partCategories: {
   },
 ];
 
-export default function AddPart() {
+export default function EditPart() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { id } = useParams<{ id: string }>();
+  const { parts } = useSelector((state: RootState) => state.parts);
   const { vehicles } = useSelector((state: RootState) => state.vehicles);
   const { user } = useSelector((state: RootState) => state.auth);
+
+  const part = parts.find((p) => p.id === id);
+
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     vehicleId: "",
@@ -125,6 +130,44 @@ export default function AddPart() {
     compressedTotal: number;
     savingsPercent: number;
   } | null>(null);
+
+  // Initialize form data when part is loaded
+  useEffect(() => {
+    if (part) {
+      setFormData({
+        vehicleId: part.vehicleId,
+        name: part.name,
+        category: part.category,
+        brand: part.brand || "",
+        partNumber: part.partNumber || "",
+        cost: part.cost.toString(),
+        installationCost: part.installationCost?.toString() || "",
+        mileage: part.mileage.toString(),
+        date: part.date,
+        description: part.description || "",
+        warranty: part.warranty || "",
+        notes: part.notes || "",
+        images: part.images || [],
+        links: part.links.length > 0 ? part.links : [""],
+      });
+    }
+  }, [part]);
+
+  if (!part) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-xl font-semibold text-secondary-900 mb-2">
+          Part not found
+        </h2>
+        <p className="text-secondary-600 mb-4">
+          The part you're trying to edit doesn't exist.
+        </p>
+        <button onClick={() => navigate("/parts")} className="btn-primary">
+          Back to Parts
+        </button>
+      </div>
+    );
+  }
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -203,7 +246,7 @@ export default function AddPart() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
-      toast.error("You must be logged in to add a part");
+      toast.error("You must be logged in to edit a part");
       return;
     }
 
@@ -214,10 +257,17 @@ export default function AddPart() {
         parseFloat(formData.cost) +
         (parseFloat(formData.installationCost) || 0);
 
-      // Upload images if provided
-      const imageUrls: string[] = [];
-      if (formData.images.length > 0) {
-        for (const imageUrl of formData.images) {
+      // Handle new image uploads
+      const newImageUrls: string[] = [];
+      const existingImages = formData.images.filter((img) =>
+        img.startsWith("http")
+      );
+      const newImages = formData.images.filter((img) =>
+        img.startsWith("blob:")
+      );
+
+      if (newImages.length > 0) {
+        for (const imageUrl of newImages) {
           // Convert blob URL to file
           const response = await fetch(imageUrl);
           const blob = await response.blob();
@@ -226,8 +276,11 @@ export default function AddPart() {
           });
 
           const fileName = `${user.id}/${Date.now()}-${file.name}`;
-          const { error: uploadError } =
-            await storage.uploadCompressedImage("part-images", fileName, file);
+          const { error: uploadError } = await storage.uploadCompressedImage(
+            "part-images",
+            fileName,
+            file
+          );
 
           if (uploadError) throw uploadError;
 
@@ -235,39 +288,42 @@ export default function AddPart() {
             .from("part-images")
             .getPublicUrl(fileName);
 
-          imageUrls.push(urlData.publicUrl);
+          newImageUrls.push(urlData.publicUrl);
         }
       }
 
-      // Create part in database
+      // Combine existing and new images
+      const allImages = [...existingImages, ...newImageUrls];
+
+      // Update part in database
       const { data: partData, error: partError } = await supabase
         .from("parts")
-        .insert([
-          {
-            vehicle_id: formData.vehicleId,
-            name: formData.name,
-            category: formData.category,
-            brand: formData.brand || null,
-            part_number: formData.partNumber || null,
-            cost: parseFloat(formData.cost),
-            installation_cost: parseFloat(formData.installationCost) || null,
-            total_cost: totalCost,
-            mileage: parseInt(formData.mileage),
-            date: formData.date,
-            description: formData.description || null,
-            images: imageUrls,
-            links: formData.links.filter((link) => link.trim() !== ""),
-            warranty: formData.warranty || null,
-            notes: formData.notes || null,
-          },
-        ])
+        .update({
+          vehicle_id: formData.vehicleId,
+          name: formData.name,
+          category: formData.category,
+          brand: formData.brand || null,
+          part_number: formData.partNumber || null,
+          cost: parseFloat(formData.cost),
+          installation_cost: parseFloat(formData.installationCost) || null,
+          total_cost: totalCost,
+          mileage: parseInt(formData.mileage),
+          date: formData.date,
+          description: formData.description || null,
+          images: allImages,
+          links: formData.links.filter((link) => link.trim() !== ""),
+          warranty: formData.warranty || null,
+          notes: formData.notes || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", part.id)
         .select()
         .single();
 
       if (partError) throw partError;
 
-      // Add to Redux store
-      const newPart: Part = {
+      // Update Redux store
+      const updatedPart: Part = {
         id: partData.id,
         vehicleId: partData.vehicle_id,
         name: partData.name,
@@ -288,15 +344,15 @@ export default function AddPart() {
         updatedAt: partData.updated_at,
       };
 
-      dispatch(addPart(newPart));
-      toast.success("Part added successfully!");
-      navigate("/parts");
+      dispatch(updatePart(updatedPart));
+      toast.success("Part updated successfully!");
+      navigate(`/parts/${part.id}`);
     } catch (error) {
-      console.error("Error adding part:", error);
+      console.error("Error updating part:", error);
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to add part. Please try again."
+          : "Failed to update part. Please try again."
       );
     } finally {
       setLoading(false);
@@ -308,14 +364,14 @@ export default function AddPart() {
       {/* Header */}
       <div className="flex items-center space-x-4">
         <button
-          onClick={() => navigate("/parts")}
+          onClick={() => navigate(`/parts/${part.id}`)}
           className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-secondary-900">Add Part</h1>
-          <p className="text-secondary-600">Track a new modification or part</p>
+          <h1 className="text-2xl font-bold text-secondary-900">Edit Part</h1>
+          <p className="text-secondary-600">Update part information</p>
         </div>
       </div>
 
@@ -733,13 +789,13 @@ export default function AddPart() {
         <div className="flex justify-end space-x-4">
           <button
             type="button"
-            onClick={() => navigate("/parts")}
+            onClick={() => navigate(`/parts/${part.id}`)}
             className="btn-secondary"
           >
             Cancel
           </button>
           <button type="submit" disabled={loading} className="btn-primary">
-            {loading ? "Adding Part..." : "Add Part"}
+            {loading ? "Updating Part..." : "Update Part"}
           </button>
         </div>
       </form>

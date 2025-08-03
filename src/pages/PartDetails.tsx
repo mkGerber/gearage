@@ -1,17 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useSelector } from "react-redux";
-import {
-  ArrowLeft,
-  Edit,
-  Trash2,
-  ExternalLink,
-  Calendar,
-  MapPin,
-  DollarSign,
-  Wrench,
-} from "lucide-react";
+import { ArrowLeft, Edit, Trash2, ExternalLink, Wrench } from "lucide-react";
 import { RootState } from "@/store";
-import { Part } from "@/types";
 
 export default function PartDetails() {
   const { id } = useParams<{ id: string }>();
@@ -75,10 +65,13 @@ export default function PartDetails() {
           </div>
         </div>
         <div className="flex space-x-2">
-          <button className="btn-secondary flex items-center">
+          <Link
+            to={`/parts/${part.id}/edit`}
+            className="btn-secondary flex items-center"
+          >
             <Edit className="w-4 h-4 mr-2" />
             Edit
-          </button>
+          </Link>
           <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center">
             <Trash2 className="w-4 h-4 mr-2" />
             Delete

@@ -16,7 +16,7 @@ import {
 } from "recharts";
 import { RootState } from "@/store";
 import { setAnalytics } from "@/store/slices/analyticsSlice";
-import { Analytics as AnalyticsType } from "@/types";
+
 import {
   setParts,
   setLoading as setPartsLoading,
@@ -53,9 +53,7 @@ export default function Analytics() {
   const { vehicles, loading: vehiclesLoading } = useSelector(
     (state: RootState) => state.vehicles
   );
-  const { data: analytics } = useSelector(
-    (state: RootState) => state.analytics
-  );
+
   const { user } = useSelector((state: RootState) => state.auth);
 
   const calculatedAnalytics = useMemo(() => {
@@ -344,7 +342,7 @@ export default function Analytics() {
                 fill="#8884d8"
                 dataKey="value"
               >
-                {categoryData.map((entry, index) => (
+                {categoryData.map((_, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={COLORS[index % COLORS.length]}

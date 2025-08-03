@@ -8,6 +8,7 @@ import VehicleDetails from "./pages/VehicleDetails";
 import AddVehicle from "./pages/AddVehicle";
 import Parts from "./pages/Parts";
 import AddPart from "./pages/AddPart";
+import EditPart from "./pages/EditPart";
 import PartDetails from "./pages/PartDetails";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
@@ -15,8 +16,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import TestVehicle from "./pages/TestVehicle";
 import { RootState } from "./store";
-import { setupStorageBuckets } from "./utils/setupStorage";
-import { setUser, setLoading } from "./store/slices/authSlice";
+import { setUser } from "./store/slices/authSlice";
 import { supabase } from "./services/supabase";
 
 function App() {
@@ -160,6 +160,7 @@ function App() {
         <Route path="/parts" element={<Parts />} />
         <Route path="/parts/add" element={<AddPart />} />
         <Route path="/parts/:id" element={<PartDetails />} />
+        <Route path="/parts/:id/edit" element={<EditPart />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/test" element={<TestVehicle />} />

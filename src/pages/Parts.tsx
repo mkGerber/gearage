@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { Plus, Search, Filter, Wrench } from "lucide-react";
+import { Plus, Search, Wrench, Edit } from "lucide-react";
 import { RootState } from "@/store";
 import { Part, PartCategory } from "@/types";
 import {
@@ -506,27 +506,45 @@ function PartCard({ part }: PartCardProps) {
         </div>
 
         <div className="text-right ml-4">
-          <p className="text-lg font-bold text-green-600">
-            ${part.totalCost.toLocaleString()}
-          </p>
-          <p className="text-sm text-secondary-500">
-            Part: ${part.cost.toLocaleString()}
-            {part.installationCost &&
-              ` + Install: $${part.installationCost.toLocaleString()}`}
-          </p>
-          {(!part.installationCost || part.installationCost === 0) && (
-            <div className="mt-2">
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                💚 Est. Saved ~$
-                {(() => {
-                  const category = partCategories.find(
-                    (c) => c.value === part.category
-                  );
-                  return category?.estimatedInstallCost || 150;
-                })()}
-              </span>
+          <div className="flex flex-col items-end space-y-2">
+            <div className="flex space-x-2">
+              <Link
+                to={`/parts/${part.id}/edit`}
+                className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded-lg transition-colors"
+                title="Edit part"
+              >
+                <Edit className="w-4 h-4" />
+              </Link>
+              <Link
+                to={`/parts/${part.id}`}
+                className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded-lg transition-colors"
+                title="View details"
+              >
+                <span className="text-sm">👁️</span>
+              </Link>
             </div>
-          )}
+            <p className="text-lg font-bold text-green-600">
+              ${part.totalCost.toLocaleString()}
+            </p>
+            <p className="text-sm text-secondary-500">
+              Part: ${part.cost.toLocaleString()}
+              {part.installationCost &&
+                ` + Install: $${part.installationCost.toLocaleString()}`}
+            </p>
+            {(!part.installationCost || part.installationCost === 0) && (
+              <div className="mt-2">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                  💚 Est. Saved ~$
+                  {(() => {
+                    const category = partCategories.find(
+                      (c) => c.value === part.category
+                    );
+                    return category?.estimatedInstallCost || 150;
+                  })()}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

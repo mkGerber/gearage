@@ -1,16 +1,9 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import {
-  Car,
-  Wrench,
-  DollarSign,
-  TrendingUp,
-  Plus,
-  Calendar,
-  BarChart3,
-} from "lucide-react";
+import { Car, Wrench, DollarSign, Plus, BarChart3 } from "lucide-react";
 import { RootState } from "@/store";
+import { PartCategory } from "@/types";
 import {
   setVehicles,
   setLoading,
@@ -127,7 +120,7 @@ export default function Dashboard() {
     0
   );
   const totalParts = parts.length;
-  const averagePartCost = totalParts > 0 ? totalSpent / totalParts : 0;
+
   // Define estimated installation costs by category
   const estimatedInstallCosts: Record<PartCategory, number> = {
     engine: 800,

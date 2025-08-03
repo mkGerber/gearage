@@ -156,6 +156,30 @@ export const storage = {
     return { data, error }
   },
 
+  uploadCompressedImage: async (bucket: string, path: string, file: File) => {
+    // Import compression function dynamically to avoid circular dependencies
+    const { compressImage } = await import('../utils/imageCompression');
+    
+    try {
+      // Compress the image before uploading
+      const compressedFile = await compressImage(file);
+      
+      // Upload the compressed file
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(path, compressedFile)
+      
+      return { data, error }
+    } catch (compressionError) {
+      console.error('Image compression failed, uploading original:', compressionError);
+      // Fallback to original file if compression fails
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(path, file)
+      return { data, error }
+    }
+  },
+
   getImageUrl: (bucket: string, path: string) => {
     const { data } = supabase.storage
       .from(bucket)

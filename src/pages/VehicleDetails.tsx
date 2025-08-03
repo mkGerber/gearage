@@ -7,7 +7,6 @@ import {
   Trash2,
   Plus,
   Calendar,
-  MapPin,
   DollarSign,
 } from "lucide-react";
 import { RootState } from "@/store";

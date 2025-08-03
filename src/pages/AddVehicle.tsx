@@ -5,7 +5,9 @@ import { ArrowLeft, Upload, X } from "lucide-react";
 import { addVehicle } from "@/store/slices/vehiclesSlice";
 import { Vehicle } from "@/types";
 import { RootState } from "@/store";
-import { supabase } from "@/services/supabase";
+import { supabase, storage } from "@/services/supabase";
+import { compressImage, formatFileSize } from "@/utils/imageCompression";
+import ImageCompressionInfo from "@/components/ImageCompressionInfo";
 import toast from "react-hot-toast";
 
 export default function AddVehicle() {
@@ -25,6 +27,7 @@ export default function AddVehicle() {
     image: null as File | null,
     imagePreview: "",
   });
+  const [compressedImage, setCompressedImage] = useState<File | null>(null);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -33,7 +36,7 @@ export default function AddVehicle() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     console.log("Image selected:", file);
     if (file) {
@@ -43,6 +46,23 @@ export default function AddVehicle() {
         type: file.type,
         lastModified: file.lastModified,
       });
+
+      // Compress the image immediately
+      try {
+        const compressed = await compressImage(file);
+        setCompressedImage(compressed);
+        console.log("Image compressed:", {
+          original: formatFileSize(file.size),
+          compressed: formatFileSize(compressed.size),
+          savings: `${Math.round(
+            ((file.size - compressed.size) / file.size) * 100
+          )}%`,
+        });
+      } catch (error) {
+        console.error("Compression failed:", error);
+        setCompressedImage(null);
+      }
+
       setFormData((prev) => ({
         ...prev,
         image: file,
@@ -50,6 +70,7 @@ export default function AddVehicle() {
       }));
     } else {
       console.log("No file selected");
+      setCompressedImage(null);
     }
   };
 
@@ -59,6 +80,7 @@ export default function AddVehicle() {
       image: null,
       imagePreview: "",
     }));
+    setCompressedImage(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -105,9 +127,11 @@ export default function AddVehicle() {
           console.log("Starting upload...");
 
           // Add timeout to prevent hanging
-          const uploadPromise = supabase.storage
-            .from("vehicle-images")
-            .upload(fileName, formData.image);
+          const uploadPromise = storage.uploadCompressedImage(
+            "vehicle-images",
+            fileName,
+            compressedImage || formData.image
+          );
 
           const timeoutPromise = new Promise((_, reject) =>
             setTimeout(
@@ -161,9 +185,9 @@ export default function AddVehicle() {
         } catch (error) {
           console.error("Image upload exception:", error);
           console.error("Exception details:", {
-            name: error.name,
-            message: error.message,
-            stack: error.stack,
+            name: error instanceof Error ? error.name : "Unknown",
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
           });
           toast.error(
             `Image upload error: ${
@@ -304,6 +328,12 @@ export default function AddVehicle() {
             Vehicle Image
           </h2>
           <div className="space-y-4">
+            {/* Show compression info if available */}
+            <ImageCompressionInfo
+              originalFile={formData.image}
+              compressedFile={compressedImage}
+            />
+
             {formData.imagePreview ? (
               <div className="relative">
                 <img

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { Crown, Download, User, Bell, Shield, CreditCard } from "lucide-react";
+import { Crown, Download, User, Bell, Shield } from "lucide-react";
 import { RootState } from "@/store";
 
 export default function Settings() {

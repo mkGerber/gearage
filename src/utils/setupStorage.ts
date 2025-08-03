@@ -3,7 +3,7 @@ import { supabase } from '@/services/supabase';
 export async function setupStorageBuckets() {
   try {
     // Check if vehicle-images bucket exists
-    const { data: vehicleBucket, error: vehicleError } = await supabase.storage
+    const { error: vehicleError } = await supabase.storage
       .getBucket('vehicle-images');
     
     if (vehicleError) {
@@ -25,7 +25,7 @@ export async function setupStorageBuckets() {
     }
 
     // Check if part-images bucket exists
-    const { data: partBucket, error: partError } = await supabase.storage
+    const { error: partError } = await supabase.storage
       .getBucket('part-images');
     
     if (partError) {
